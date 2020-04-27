@@ -140,9 +140,9 @@ float nsSingleByteCharSetProber::GetConfidence(void)
 
 const char* nsSingleByteCharSetProber::GetCharSetName()
 {
-  if (!mNameProber)
+    //if (!mNameProber)
     return mModel->charsetName;
-  return mNameProber->GetCharSetName();
+    //return mNameProber->GetCharSetName();
 }
 
 const char* nsSingleByteCharSetProber::GetLanguage()
