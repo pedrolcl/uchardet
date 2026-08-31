@@ -1,0 +1,55 @@
+name: "Windows MSVC CI"
+
+on:
+  push:
+    branches: [ "master", "devel" ]
+  pull_request:
+    branches: [ "master", "devel" ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: RelWithDebInfo
+  INSTALL_LOCATION: ${{github.workspace}}/Uchardet008
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: "win64", os: "windows-latest" }
+          - { arch: "arm64", os: "windows-11-arm" }
+    runs-on: ${{ matrix.os }}
+    name: 'MSVC ${{ matrix.arch }}'
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: 'Setup MSVC'
+      uses: TheMrMilchmann/setup-msvc-dev@v4
+      with:
+        arch: ${{ matrix.arch }}
+
+    - name: 'Configure CMake'
+      id: configuration
+      run: >
+        cmake -G Ninja -B ${{github.workspace}}/build
+        -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+        -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_LOCATION}}
+        -DBUILD_STATIC=OFF
+        -DBUILD_BINARY=OFF
+
+    - name: 'Build'
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: 'Install'
+      run: cmake --install ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v7
+      with:
+        name: Uchardet008-msvc-${{matrix.arch}}
+        path: ${{env.INSTALL_LOCATION}}
+        retention-days: 90
+        overwrite: true
+        archive: true

@@ -1,0 +1,54 @@
+name: Linux CI
+
+on:
+  push:
+    branches: [ "master", "devel" ]
+  pull_request:
+    branches: [ "master", "devel" ]
+  workflow_dispatch:
+
+env:
+  BUILD_TYPE: RelWithDebInfo
+  INSTALL_LOCATION: ${{github.workspace}}/Uchardet008
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: ["x86_64", "aarch64"]
+        include:
+          - { arch: "x86_64", os: "ubuntu-24.04" }
+          - { arch: "aarch64", os: "ubuntu-24.04-arm" }
+    runs-on: ${{ matrix.os }}
+    name: 'Linux ${{ matrix.arch }}'
+
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Configure CMake
+      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}} -DCMAKE_INSTALL_PREFIX=${{env.INSTALL_LOCATION}}
+
+    - name: Build
+      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+
+    - name: Test
+      working-directory: ${{github.workspace}}/build
+      run: ctest -C ${{env.BUILD_TYPE}}
+
+    - name: Install
+      run: cmake --install ${{github.workspace}}/build
+
+    - name: Create Archive
+      run: |
+        cd ${{github.workspace}}
+        tar cvzf Uchardet008-${{matrix.arch}}.tar.gz Uchardet008
+
+    - name: Upload Artifacts
+      uses: actions/upload-artifact@v7
+      with:
+        name: Uchardet008-${{matrix.arch}}
+        path: Uchardet008-${{matrix.arch}}.tar.gz
+        retention-days: 90
+        overwrite: true
+        archive: false
